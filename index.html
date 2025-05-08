@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neon Glow Minigolf</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        /* --- Neon Theme Styles --- */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #0a0a1a; /* Dark background */
+            font-family: 'Press Start 2P', monospace;
+            color: #e0e0ff;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: #00ffff; /* Cyan title */
+            text-shadow: 0 0 7px #00ffff, 0 0 12px #00ffff, 0 0 18px #00ffff, 0 0 25px #007777;
+            margin-bottom: 15px;
+            font-size: 2.2em;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            max-width: 95vw;
+            max-height: calc(95vw * (600 / 800));
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+            border-radius: 12px;
+        }
+
+        canvas {
+            border: 4px solid #00ffff; /* Cyan border */
+            box-shadow: 0 0 10px #00ffff, 0 0 15px #00ffff, inset 0 0 10px rgba(0, 255, 255, 0.6);
+            border-radius: 10px;
+            cursor: crosshair;
+            display: block;
+            background-color: #101025; /* Darker canvas background */
+            width: 100%;
+            height: 100%;
+        }
+
+        .info-panel {
+            margin-top: 20px;
+            padding: 12px 22px;
+            background: rgba(0, 0, 20, 0.75);
+            border: 2px solid #ff00ff; /* Magenta border */
+            box-shadow: 0 0 8px #ff00ff, 0 0 12px #ff00ff;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 340px;
+            max-width: 90%;
+            backdrop-filter: blur(3px);
+        }
+
+        .info-panel p {
+            margin: 6px 0;
+            font-size: 0.9em;
+            color: #e0e0ff;
+            text-shadow: 0 0 4px rgba(224, 224, 255, 0.7);
+        }
+
+        .current-player-indicator {
+            font-weight: bold;
+            color: #ffff00; /* Bright yellow */
+            text-shadow: 0 0 5px #ffff00, 0 0 8px #ffff00;
+        }
+
+        /* --- Start Screen Styles (Neon) --- */
+        #startScreen {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(10, 10, 30, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-radius: 10px;
+            z-index: 10;
+            color: #e0e0ff;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            backdrop-filter: blur(4px);
+        }
+
+        #startScreen h2 {
+            font-size: 1.8em;
+            margin-bottom: 30px;
+            color: #ff00ff; /* Neon pink */
+            text-shadow: 0 0 7px #ff00ff, 0 0 12px #ff00ff, 0 0 18px #800080;
+        }
+
+        .player-select {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            font-size: 1.2em;
+        }
+
+        .player-select button {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1.4em;
+            padding: 8px 12px;
+            margin: 0 20px;
+            background-color: transparent;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 6px #00ffff, inset 0 0 4px rgba(0, 255, 255, 0.5);
+            transition: all 0.2s ease;
+            text-shadow: 0 0 4px #00ffff;
+        }
+        .player-select button:hover {
+            background-color: rgba(0, 255, 255, 0.15);
+            box-shadow: 0 0 10px #00ffff, 0 0 15px #00ffff, inset 0 0 6px rgba(0, 255, 255, 0.7);
+            transform: scale(1.05);
+        }
+        .player-select button:active {
+            box-shadow: 0 0 4px #00ffff, inset 0 0 10px rgba(0, 255, 255, 0.9);
+            transform: scale(0.98);
+            color: #ffffff;
+        }
+
+        #playerCountDisplay {
+            min-width: 40px;
+            display: inline-block;
+            font-weight: bold;
+            font-size: 1.3em;
+            color: #ffff00;
+            text-shadow: 0 0 5px #ffff00;
+        }
+
+        #startGameButton {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 1.5em;
+            padding: 15px 30px;
+            background-color: transparent;
+            color: #00ff00; /* Neon green */
+            border: 3px solid #00ff00;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 0 10px #00ff00, 0 0 15px #00cc00, inset 0 0 6px rgba(0, 255, 0, 0.5);
+            transition: all 0.2s ease;
+            text-shadow: 0 0 5px #00ff00;
+        }
+        #startGameButton:hover {
+            background-color: rgba(0, 255, 0, 0.15);
+            box-shadow: 0 0 15px #00ff00, 0 0 22px #00cc00, inset 0 0 10px rgba(0, 255, 0, 0.7);
+            transform: scale(1.03);
+        }
+        #startGameButton:active {
+             box-shadow: 0 0 6px #00ff00, inset 0 0 12px rgba(0, 255, 0, 0.9);
+            transform: scale(0.98);
+            color: #ffffff;
+        }
+
+        /* Hide game elements initially */
+        .game-hidden {
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 820px) {
+            #gameContainer {
+                width: 95vw;
+                height: calc(95vw * (600 / 800));
+            }
+        }
+        @media (max-width: 600px) {
+            h1 { font-size: 1.6em; letter-spacing: 1px;}
+            .info-panel { min-width: 90%; }
+            .info-panel p { font-size: 0.8em; }
+            #startScreen h2 { font-size: 1.5em; margin-bottom: 20px;}
+            .player-select { font-size: 1em; margin-bottom: 30px; }
+            .player-select button { font-size: 1.2em; margin: 0 10px; padding: 6px 10px; }
+            #startGameButton { font-size: 1.2em; padding: 12px 25px; }
+        }
+    </style>
+</head>
+<body>
+    <h1>Neon Glow Golf</h1>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" class="game-hidden"></canvas>
+         <div id="startScreen">
+            <h2>Select Players</h2>
+            <div class="player-select">
+                <button id="decreasePlayers">-</button>
+                <span id="playerCountDisplay">2</span>
+                <button id="increasePlayers">+</button>
+            </div>
+            <button id="startGameButton">Start Game</button>
+        </div>
+    </div>
+    <div class="info-panel game-hidden">
+        <p id="messageArea">Loading neon courses...</p>
+        <p id="playerIndicator">Player 1: Cyan | Player 2: Magenta</p>
+    </div>
+
+    <script>
+        // --- Game Constants ---
+        const FRICTION = 0.975; // Keep snappier feel
+        const MAX_POWER = 22; // Keep increased power
+        const BALL_RADIUS = 10;
+        const HOLE_RADIUS_COURSE_DEFAULT = 16;
+        const MAX_SPEED_FOR_HOLE_ENTRY = 5;
+        const MIN_DRAG_DISTANCE = 15;
+        const POWER_SENSITIVITY_DIVISOR = 12;
+
+        // --- NEON Player Colors ---
+        const playerColors = [
+            '#00ffff', '#ff00ff', '#ffff00', '#00ff00', '#ff8000', '#ff4040', '#8000ff', '#40c0ff', '#ffffff'
+        ];
+        const playerColorNames = [
+            'Cyan', 'Magenta', 'Yellow', 'Lime', 'Orange', 'Red', 'Purple', 'Blue', 'White'
+        ];
+
+        // --- Game Variables ---
+        let canvas, ctx;
+        let balls = [];
+        let courseTemplates = [];
+        let currentCourseIndex = 0;
+        let currentCourse;
+        let currentPlayerIndex = 0;
+        let gameState = 'LOADING';
+        let message = "Loading neon courses...";
+        let numPlayers = 2;
+
+        let isAiming = false;
+        let aimStartPos = { x: 0, y: 0 };
+        let aimEndPos = { x: 0, y: 0 };
+        let aimPulseTime = 0;
+
+        let courseWinnerPlayerIndex = -1;
+        let gameWinnerPlayerIndex = -1;
+
+        // --- Effects ---
+        let particles = [];
+        let holeParticles = []; // *** Added for hole animation ***
+        const TRAIL_LENGTH = 10;
+        const PARTICLE_COUNT = 6; // *** Further Reduced particle count ***
+        const PARTICLE_LIFE = 30; // *** Slightly reduced life ***
+        const PARTICLE_GLOW_BASE = 2; // *** Significantly Reduced base glow ***
+        const PARTICLE_GLOW_FACTOR = 1.0; // *** Significantly Reduced glow factor ***
+        const SPARK_CHANCE = 0.1; // *** Reduced spark chance ***
+        const HOLE_PARTICLE_SPAWN_RATE = 0.15; // *** Chance per frame to spawn a hole particle ***
+        const HOLE_PARTICLE_COUNT = 1; // *** Number of hole particles to spawn at once ***
+        const HOLE_PARTICLE_LIFE = 50; // *** Life of hole particles ***
+        const HOLE_PARTICLE_SPEED = 0.8; // *** Speed towards hole center ***
+
+        // DOM Elements
+        let startScreen, gameCanvasElement, infoPanelElement, gameContainerElement;
+        let decreasePlayersBtn, increasePlayersBtn, playerCountDisplay, startGameBtn;
+
+        // --- Sound Effects ---
+        let soundsReady = false;
+        let shootSynth, wallSynth, ballSynth, holeSynth, clickSynth, hazardSynth;
+
+        function setupSounds() {
+            shootSynth = new Tone.MembraneSynth({ pitchDecay: 0.01, octaves: 3, envelope: { attack: 0.001, decay: 0.2, sustain: 0 } }).toDestination();
+            wallSynth = new Tone.Synth({ oscillator: { type: 'sawtooth' }, volume: -12, envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.1 } }).toDestination();
+            ballSynth = new Tone.Synth({ oscillator: { type: 'triangle' }, volume: -10, envelope: { attack: 0.001, decay: 0.08, sustain: 0, release: 0.1 } }).toDestination();
+            holeSynth = new Tone.PolySynth(Tone.Synth, { oscillator: { type: 'sine' }, volume: -6, envelope: { attack: 0.02, decay: 0.2, sustain: 0.4, release: 0.3 } }).toDestination();
+            clickSynth = new Tone.Synth({ oscillator: { type: 'square' }, volume: -18, envelope: { attack: 0.001, decay: 0.02, sustain: 0, release: 0.01 } }).toDestination();
+            hazardSynth = new Tone.NoiseSynth({ noise: { type: 'pink' }, volume: -22, envelope: { attack: 0.01, decay: 0.1, sustain: 0 } }).toDestination();
+            soundsReady = true;
+            console.log("Sounds ready.");
+        }
+
+        function playSound(type) {
+            if (!soundsReady || Tone.context.state !== 'running') return;
+            try {
+                const now = Tone.now();
+                switch(type) {
+                    case 'shoot': shootSynth.triggerAttackRelease('C3', '8n', now); break;
+                    case 'wall': wallSynth.triggerAttackRelease('G3', '16n', now); break;
+                    case 'ball': ballSynth.triggerAttackRelease('C5', '16n', now); break;
+                    case 'hole': holeSynth.triggerAttackRelease(['C5', 'F5', 'A#5', 'D6'], '4n', now + 0.05); break;
+                    case 'click': clickSynth.triggerAttackRelease('E5', '32n', now); break;
+                    case 'hazard': hazardSynth.triggerAttackRelease('2n', now); break;
+                }
+            } catch (error) { console.error("Sound playback error:", error); }
+        }
+
+        // Helper: Shade color
+        function shadeColor(color, percent) {
+            if (typeof color !== 'string' || !color.startsWith('#')) { return '#808080'; }
+            try {
+                let R = parseInt(color.substring(1, 3), 16);
+                let G = parseInt(color.substring(3, 5), 16);
+                let B = parseInt(color.substring(5, 7), 16);
+                R = parseInt(R * (100 + percent) / 100); G = parseInt(G * (100 + percent) / 100); B = parseInt(B * (100 + percent) / 100);
+                R = Math.min(255, Math.max(0, R)); G = Math.min(255, Math.max(0, G)); B = Math.min(255, Math.max(0, B));
+                return "#" + R.toString(16).padStart(2, '0') + G.toString(16).padStart(2, '0') + B.toString(16).padStart(2, '0');
+            } catch (e) { console.error("Error shading color:", color, e); return '#808080'; }
+        }
+
+        // --- Particle System (Optimized Glow) ---
+        function createParticles(x, y, color) {
+            const count = PARTICLE_COUNT + Math.floor(Math.random() * 2); // Reduced count & variation
+            for (let i = 0; i < count; i++) {
+                const particleColor = (Math.random() < SPARK_CHANCE) ? '#ffffff' : color;
+                const particleGlowColor = (particleColor === '#ffffff') ? '#ffffff' : color;
+                const initialSize = Math.random() * 1.8 + (particleColor === '#ffffff' ? 1.0 : 1.5); // Smaller
+
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() * 2.5 - 1.25) * (Math.random() * 1.4 + 0.6),
+                    vy: (Math.random() * -3.0 - 0.8) * (Math.random() * 1.4 + 0.6),
+                    size: initialSize,
+                    life: PARTICLE_LIFE + Math.random() * 10,
+                    maxLife: PARTICLE_LIFE + Math.random() * 10,
+                    color: particleColor,
+                    glowColor: particleGlowColor
+                });
+            }
+        }
+
+        function updateAndDrawParticles(context) {
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += 0.04; p.life--; p.size *= 0.97;
+                if (p.life <= 0 || p.size < 0.5) { particles.splice(i, 1); } // Remove even smaller
+                else {
+                    context.save();
+                    const alpha = Math.max(0, p.life / p.maxLife);
+                    context.globalAlpha = alpha;
+                    // *** Significantly Reduced Glow ***
+                    context.shadowColor = p.glowColor;
+                    context.shadowBlur = PARTICLE_GLOW_BASE + p.size * PARTICLE_GLOW_FACTOR * alpha; // Reduced glow
+                    context.fillStyle = p.color;
+                    context.beginPath(); context.arc(p.x, p.y, p.size, 0, Math.PI * 2); context.fill();
+                    context.restore();
+                }
+            }
+            context.shadowColor = 'transparent'; context.shadowBlur = 0;
+        }
+
+        // --- Hole Particle System ---
+        function createHoleParticle(holeX, holeY, holeRadius, color) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = holeRadius * (1.5 + Math.random() * 1.0); // Spawn outside the hole radius
+            holeParticles.push({
+                x: holeX + Math.cos(angle) * dist,
+                y: holeY + Math.sin(angle) * dist,
+                size: Math.random() * 1.5 + 0.5, // Small particles
+                life: HOLE_PARTICLE_LIFE,
+                maxLife: HOLE_PARTICLE_LIFE,
+                color: color,
+                targetX: holeX,
+                targetY: holeY
+            });
+        }
+
+        function updateAndDrawHoleParticles(context) {
+            for (let i = holeParticles.length - 1; i >= 0; i--) {
+                const p = holeParticles[i];
+                p.life--;
+                p.size *= 0.98; // Shrink slowly
+
+                // Move towards hole center
+                const dx = p.targetX - p.x;
+                const dy = p.targetY - p.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > 1) { // Avoid division by zero
+                    p.x += (dx / dist) * HOLE_PARTICLE_SPEED;
+                    p.y += (dy / dist) * HOLE_PARTICLE_SPEED;
+                }
+
+                if (p.life <= 0 || p.size < 0.2 || dist < 2) { // Remove when dead, too small, or reached center
+                    holeParticles.splice(i, 1);
+                } else {
+                    context.save();
+                    const alpha = Math.max(0, p.life / p.maxLife);
+                    context.globalAlpha = alpha * 0.7; // Make them slightly transparent
+                    context.fillStyle = p.color;
+                    // Minimal glow for hole particles
+                    context.shadowColor = p.color;
+                    context.shadowBlur = 2 + p.size * 0.5;
+                    context.beginPath();
+                    context.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    context.fill();
+                    context.restore();
+                }
+            }
+             // Reset shadow explicitly after loop
+             context.shadowColor = 'transparent';
+             context.shadowBlur = 0;
+        }
+
+
+        // --- Ball Object (Neon Draw with Enhanced Reflection) ---
+        function Ball(id, x, y, color) {
+            // ... (Properties remain the same) ...
+            this.id = id; this.x = x; this.y = y;
+            this.startX = x; this.startY = y;
+            this.radius = BALL_RADIUS; this.color = color;
+            this.vx = 0; this.vy = 0;
+            this.inHole = false; this.isMoving = false;
+            this.trail = [];
+
+            this.draw = function(context) {
+                if (this.inHole && gameState !== 'GAME_OVER') return;
+
+                // Draw Trail (Neon)
+                if (this.isMoving && this.trail.length > 0) {
+                    context.save();
+                    context.lineCap = 'round';
+                    for (let i = this.trail.length - 1; i > 0; i--) {
+                         const pos = this.trail[i]; const prevPos = this.trail[i-1];
+                         const alpha = (i / this.trail.length) * 0.5;
+                         const lineWidth = this.radius * 0.8 * (i / this.trail.length);
+                         context.beginPath(); context.moveTo(prevPos.x, prevPos.y); context.lineTo(pos.x, pos.y);
+                         context.lineWidth = lineWidth; context.strokeStyle = this.color; context.globalAlpha = alpha;
+                         context.shadowColor = this.color; context.shadowBlur = lineWidth * 1.5;
+                         context.stroke();
+                    }
+                    context.restore();
+                }
+
+                // Draw Main Ball (Neon)
+                context.save();
+                context.shadowColor = this.color; context.shadowBlur = 10 + this.radius * 0.4; // Slightly reduced glow
+                context.fillStyle = this.color;
+                context.beginPath(); context.arc(this.x, this.y, this.radius, 0, Math.PI * 2); context.fill();
+                context.restore();
+
+                // --- Enhanced Inner Highlight/Reflection ---
+                context.save();
+                const gradient = context.createRadialGradient(
+                    this.x - this.radius * 0.3, this.y - this.radius * 0.4, this.radius * 0.1,
+                    this.x, this.y, this.radius * 1.1 // Slightly smaller outer radius for gradient
+                );
+                gradient.addColorStop(0, 'rgba(255, 255, 255, 0.5)'); // Slightly dimmer center
+                gradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.2)');
+                gradient.addColorStop(1, 'rgba(255, 255, 255, 0.0)');
+                context.fillStyle = gradient;
+                context.beginPath(); context.arc(this.x, this.y, this.radius, 0, Math.PI * 2); context.fill();
+                context.restore();
+
+
+                // Pulsing highlight for current player
+                if (this.id === currentPlayerIndex && (gameState === 'WAITING_FOR_AIM' || gameState === 'AIMING') && !this.inHole) {
+                    const pulseAlpha = 0.6 + Math.sin(Date.now() * 0.008) * 0.4;
+                    context.strokeStyle = `rgba(255, 255, 255, ${pulseAlpha})`;
+                    context.lineWidth = 2; context.shadowColor = '#ffffff'; context.shadowBlur = 5;
+                    context.beginPath(); context.arc(this.x, this.y, this.radius + 4, 0, Math.PI * 2); context.stroke();
+                    context.shadowColor = 'transparent'; context.shadowBlur = 0;
+                }
+            };
+
+            // shoot() and update() methods remain the same as previous version
+            this.shoot = function(power, angle) {
+                this.vx = Math.cos(angle) * power; this.vy = Math.sin(angle) * power;
+                this.isMoving = true; this.inHole = false;
+                this.trail = []; // Clear trail on new shot
+                playSound('shoot');
+            };
+
+            this.update = function(obstacles, hazards, holePos, holeRadius, allBalls, canvasWidth, canvasHeight) {
+                if (!this.isMoving) return;
+
+                // Update Trail
+                this.trail.push({ x: this.x, y: this.y });
+                if (this.trail.length > TRAIL_LENGTH) { this.trail.shift(); }
+
+                // Apply Hazard Effects First
+                let currentFriction = FRICTION;
+                let inHazard = false;
+                let hazardEffect = null;
+                hazards.forEach(hazard => {
+                    if (this.x > hazard.x && this.x < hazard.x + hazard.width &&
+                        this.y > hazard.y && this.y < hazard.y + hazard.height) {
+                        inHazard = true;
+                        currentFriction = hazard.frictionMultiplier;
+                        hazardEffect = hazard.type;
+                    }
+                });
+
+                // Apply friction
+                this.vx *= currentFriction; this.vy *= currentFriction;
+
+                // Apply specific hazard effects
+                if (hazardEffect === 'staticZone' && Math.random() < 0.05) {
+                    this.vx += (Math.random() - 0.5) * 0.8; this.vy += (Math.random() - 0.5) * 0.8;
+                    if (Math.random() < 0.2) playSound('hazard');
+                }
+
+                // Stop if moving very slowly
+                if (Math.abs(this.vx) < 0.05 && Math.abs(this.vy) < 0.05) {
+                    this.vx = 0; this.vy = 0; this.isMoving = false; this.trail = []; return;
+                }
+
+                // Update position
+                this.x += this.vx; this.y += this.vy;
+
+                // Wall collisions
+                let hitWall = false;
+                let collisionPointW = {x: this.x, y: this.y};
+                const bounceFactor = -0.75;
+                if (this.x - this.radius < 0) { this.x = this.radius; this.vx *= bounceFactor; hitWall = true; collisionPointW.x = 0; }
+                else if (this.x + this.radius > canvasWidth) { this.x = canvasWidth - this.radius; this.vx *= bounceFactor; hitWall = true; collisionPointW.x = canvasWidth;}
+                if (this.y - this.radius < 0) { this.y = this.radius; this.vy *= bounceFactor; hitWall = true; collisionPointW.y = 0;}
+                else if (this.y + this.radius > canvasHeight) { this.y = canvasHeight - this.radius; this.vy *= bounceFactor; hitWall = true; collisionPointW.y = canvasHeight; }
+                if (hitWall) { playSound('wall'); createParticles(collisionPointW.x, collisionPointW.y, this.color); }
+
+                // Obstacle collisions
+                let hitObstacle = false;
+                obstacles.forEach(obs => {
+                    const closestX = Math.max(obs.x, Math.min(this.x, obs.x + obs.width));
+                    const closestY = Math.max(obs.y, Math.min(this.y, obs.y + obs.height));
+                    const dx = this.x - closestX; const dy = this.y - closestY;
+                    const distanceSquared = (dx * dx) + (dy * dy);
+                    if (distanceSquared < (this.radius * this.radius)) {
+                        if (!hitObstacle) { createParticles(closestX, closestY, obs.color); hitObstacle = true; playSound('wall'); }
+                        const distanceVal = Math.sqrt(distanceSquared);
+                        const overlap = this.radius - distanceVal;
+                        const normalX = distanceVal === 0 ? (this.x > obs.x + obs.width / 2 ? 1 : -1) : dx / distanceVal;
+                        const normalY = distanceVal === 0 ? (this.y > obs.y + obs.height / 2 ? 1 : -1) : dy / distanceVal;
+                        this.x += normalX * overlap; this.y += normalY * overlap;
+                        const dotProduct = (this.vx * normalX + this.vy * normalY);
+                        this.vx = (this.vx - 2 * dotProduct * normalX) * 0.7; this.vy = (this.vy - 2 * dotProduct * normalY) * 0.7;
+                    }
+                });
+
+                // Ball-to-ball collision
+                let hitBall = false;
+                allBalls.forEach(otherBall => {
+                    if (otherBall.id === this.id || otherBall.inHole) return;
+                    const dx = otherBall.x - this.x; const dy = otherBall.y - this.y;
+                    const distSquared = dx * dx + dy * dy;
+                    const totalRadius = this.radius + otherBall.radius;
+                    if (distSquared < totalRadius * totalRadius) {
+                        const dist = Math.sqrt(distSquared);
+                         if (!hitBall) {
+                             hitBall = true;
+                             const hitPointX = (this.x * otherBall.radius + otherBall.x * this.radius) / totalRadius;
+                             const hitPointY = (this.y * otherBall.radius + otherBall.y * this.radius) / totalRadius;
+                             playSound('ball'); createParticles(hitPointX, hitPointY, this.color); createParticles(hitPointX, hitPointY, otherBall.color);
+                         }
+                        const overlap = totalRadius - dist;
+                        const nx = dist === 0 ? 1 : dx / dist; const ny = dist === 0 ? 0 : dy / dist;
+                        this.x -= (overlap / 2) * nx; this.y -= (overlap / 2) * ny;
+                        otherBall.x += (overlap / 2) * nx; otherBall.y += (overlap / 2) * ny;
+                        const rvx = this.vx - otherBall.vx; const rvy = this.vy - otherBall.vy;
+                        const velAlongNormal = rvx * nx + rvy * ny;
+                        if (velAlongNormal > 0) return;
+                        const restitution = 0.85; const j = -(1 + restitution) * velAlongNormal;
+                        const impulseX = (j / 2) * nx; const impulseY = (j / 2) * ny;
+                        this.vx += impulseX; this.vy += impulseY; otherBall.vx -= impulseX; otherBall.vy -= impulseY;
+                        this.isMoving = true; otherBall.isMoving = true;
+                    }
+                });
+
+                // Hole check
+                const distToHole = Math.sqrt(Math.pow(this.x - holePos.x, 2) + Math.pow(this.y - holePos.y, 2));
+                if (!this.inHole && distToHole < holeRadius ) {
+                    const currentSpeed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                    if (currentSpeed < MAX_SPEED_FOR_HOLE_ENTRY) {
+                        playSound('hole'); message = `Player ${this.id + 1} (${playerColorNames[this.id % playerColorNames.length]}) GOAL!`; updateUI();
+                        this.inHole = true; this.isMoving = false; this.vx = 0; this.vy = 0;
+                        this.x = holePos.x; this.y = holePos.y; this.trail = []; console.log(`Ball ${this.id} went in hole.`);
+                        createParticles(holePos.x, holePos.y, this.color); createParticles(holePos.x, holePos.y, '#ffffff');
+                    } else {
+                        const angleToHole = Math.atan2(this.y - holePos.y, this.x - holePos.x);
+                        this.vx += Math.cos(angleToHole) * 0.5; this.vy += Math.sin(angleToHole) * 0.5;
+                    }
+                }
+            };
+
+            this.reset = function(newX, newY) {
+                this.x = newX; this.y = newY; this.startX = newX; this.startY = newY;
+                this.vx = 0; this.vy = 0; this.inHole = false; this.isMoving = false; this.trail = [];
+            };
+        }
+
+        // --- Course Templates Definition (NEON with Themed Palettes) ---
+        function defineCourseTemplates() {
+             // Base colors for levels
+            const levelColors = {
+                cyan: '#00ffff',
+                lime: '#00ff00',
+                yellow: '#ffff00',
+                magenta: '#ff00ff'
+            };
+            // Hazard colors remain consistent
+            const hazardColors = {
+                energyField: '#ff4040', // Red energy field
+                staticZone: '#8000ff'   // Purple static zone
+            };
+
+            courseTemplates = [
+                {   // Level 1: Cyan
+                    name: "Cyan Circuit", bgColor: "#101025", bgPattern: 'grid',
+                    primaryColor: levelColors.cyan, // *** Assign primary color ***
+                    obstacleColors: [levelColors.cyan, shadeColor(levelColors.cyan, -20), shadeColor(levelColors.cyan, 20)], // Variations of cyan
+                    obstacleThemeTypes: ['neonRect'],
+                    hazardType: 'energyField', hazardColor: hazardColors.energyField, hazardFriction: 0.92,
+                    baseObstacles: 3, maxObstacles: 5, baseHazards: 1, maxHazards: 2,
+                    holeRadius: HOLE_RADIUS_COURSE_DEFAULT
+                },
+                {   // Level 2: Lime
+                    name: "Lime Labyrinth", bgColor: "#051505", bgPattern: 'grid',
+                    primaryColor: levelColors.lime, // *** Assign primary color ***
+                    obstacleColors: [levelColors.lime, shadeColor(levelColors.lime, -20), shadeColor(levelColors.lime, 20)], // Variations of lime
+                    obstacleThemeTypes: ['neonRect'],
+                    hazardType: 'staticZone', hazardColor: hazardColors.staticZone, hazardFriction: 1.0,
+                    baseObstacles: 4, maxObstacles: 6, baseHazards: 1, maxHazards: 3,
+                    holeRadius: HOLE_RADIUS_COURSE_DEFAULT
+                },
+                {   // Level 3: Yellow
+                    name: "Yellow Yield", bgColor: "#181808", bgPattern: 'grid', // Dark yellow background
+                    primaryColor: levelColors.yellow, // *** Assign primary color ***
+                    obstacleColors: [levelColors.yellow, shadeColor(levelColors.yellow, -20), shadeColor(levelColors.yellow, 20)], // Variations of yellow
+                    obstacleThemeTypes: ['neonRect'],
+                    hazardType: 'energyField', hazardColor: hazardColors.energyField, hazardFriction: 0.90,
+                    baseObstacles: 4, maxObstacles: 7, baseHazards: 2, maxHazards: 3,
+                    holeRadius: HOLE_RADIUS_COURSE_DEFAULT + 1
+                },
+                {   // Level 4: Magenta
+                    name: "Magenta Maze", bgColor: "#180818", bgPattern: 'grid',
+                    primaryColor: levelColors.magenta, // *** Assign primary color ***
+                    obstacleColors: [levelColors.magenta, shadeColor(levelColors.magenta, -20), shadeColor(levelColors.magenta, 20)], // Variations of magenta
+                    obstacleThemeTypes: ['neonRect'],
+                    hazardType: 'staticZone', hazardColor: hazardColors.staticZone, hazardFriction: 1.0,
+                    baseObstacles: 5, maxObstacles: 8, baseHazards: 2, maxHazards: 4,
+                    holeRadius: HOLE_RADIUS_COURSE_DEFAULT + 2
+                }
+            ];
+        }
+
+        // Helper: distance
+        function distance(p1, p2) { return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2)); }
+
+        // Helper: rectangle overlap
+        function checkRectOverlap(rect1, rect2) {
+            return rect1.x < rect2.x + rect2.width && rect1.x + rect1.width > rect2.x &&
+                   rect1.y < rect2.y + rect2.height && rect1.y + rect1.height > rect2.y;
+        }
+
+        // --- Procedural Course Generation (Uses Themed Colors) ---
+        function generateProceduralCourse(template, courseIndex, canvasWidth, canvasHeight, playerCount) {
+             const newCourse = {
+                name: template.name, bgColor: template.bgColor, bgPattern: template.bgPattern,
+                primaryColor: template.primaryColor, // *** Store primary color ***
+                holeRadius: template.holeRadius, startPositions: [], holePosition: {},
+                obstacles: [], hazards: [], visualDetails: {}
+            };
+            const padding = 40; const safeZonePaddingObs = BALL_RADIUS * 2.5; const safeZonePaddingHazard = BALL_RADIUS * 3;
+
+            // 1. Place Hole
+            newCourse.holePosition = {
+                x: Math.random() * (canvasWidth - 2 * (newCourse.holeRadius + padding)) + newCourse.holeRadius + padding,
+                y: Math.random() * (canvasHeight - 2 * (newCourse.holeRadius + padding)) + newCourse.holeRadius + padding
+            };
+
+            // 2. Place Balls
+            const minBallHoleDist = Math.max(canvasWidth * 0.3, canvasHeight * 0.3);
+            let startAreaX, startAreaY; let attempts = 0;
+            do {
+                startAreaX = padding + BALL_RADIUS + Math.random() * (canvasWidth - 2 * (padding + BALL_RADIUS));
+                startAreaY = padding + BALL_RADIUS + Math.random() * (canvasHeight - 2 * (padding + BALL_RADIUS));
+                attempts++;
+            } while (distance({x: startAreaX, y: startAreaY}, newCourse.holePosition) < minBallHoleDist && attempts < 50);
+            const startSpacing = BALL_RADIUS * 3.5;
+            for (let i = 0; i < playerCount; i++) {
+                const angle = (i / playerCount) * Math.PI * 2;
+                let ballX = startAreaX + Math.cos(angle) * startSpacing * (0.5 + Math.random() * 0.5);
+                let ballY = startAreaY + Math.sin(angle) * startSpacing * (0.5 + Math.random() * 0.5);
+                ballX = Math.max(padding + BALL_RADIUS, Math.min(ballX, canvasWidth - padding - BALL_RADIUS));
+                ballY = Math.max(padding + BALL_RADIUS, Math.min(ballY, canvasHeight - padding - BALL_RADIUS));
+                 if (distance({x: ballX, y: ballY}, newCourse.holePosition) < newCourse.holeRadius + BALL_RADIUS * 3) {
+                    ballX = startAreaX; ballY = startAreaY;
+                    ballX = Math.max(padding + BALL_RADIUS, Math.min(ballX, canvasWidth - padding - BALL_RADIUS));
+                    ballY = Math.max(padding + BALL_RADIUS, Math.min(ballY, canvasHeight - padding - BALL_RADIUS));
+                 }
+                newCourse.startPositions.push({ x: ballX, y: ballY });
+            }
+
+            // 3. Place Obstacles (Using Level Palette)
+            const numObstacles = template.baseObstacles + Math.floor(Math.random() * (template.maxObstacles - template.baseObstacles + 1));
+            const obstacleMinSize = 30; const obstacleMaxSize = Math.min(canvasWidth / 5, canvasHeight / 5);
+            for (let i = 0; i < numObstacles; i++) {
+                let attempts = 0; let placed = false;
+                while (attempts < 70 && !placed) {
+                    attempts++;
+                    const obsWidth = obstacleMinSize + Math.random() * (obstacleMaxSize - obstacleMinSize);
+                    const obsHeight = obstacleMinSize + Math.random() * (obstacleMaxSize - obstacleMinSize);
+                    // *** Use the level's obstacle color palette ***
+                    const obsColor = template.obstacleColors[Math.floor(Math.random() * template.obstacleColors.length)];
+                    const obs = { type: 'neonRect', x: Math.random() * (canvasWidth - obsWidth - 2 * padding) + padding, y: Math.random() * (canvasHeight - obsHeight - 2 * padding) + padding, width: obsWidth, height: obsHeight, color: obsColor };
+                    const holeSafeZoneRect = { x: newCourse.holePosition.x - (newCourse.holeRadius + safeZonePaddingObs), y: newCourse.holePosition.y - (newCourse.holeRadius + safeZonePaddingObs), width: (newCourse.holeRadius + safeZonePaddingObs) * 2, height: (newCourse.holeRadius + safeZonePaddingObs) * 2 };
+                    if (checkRectOverlap(obs, holeSafeZoneRect)) continue;
+                    let ballStartOverlap = false;
+                    for (const ballStart of newCourse.startPositions) { const ballSafeZoneRect = { x: ballStart.x - (BALL_RADIUS + safeZonePaddingObs), y: ballStart.y - (BALL_RADIUS + safeZonePaddingObs), width: (BALL_RADIUS + safeZonePaddingObs) * 2, height: (BALL_RADIUS + safeZonePaddingObs) * 2 }; if (checkRectOverlap(obs, ballSafeZoneRect)) { ballStartOverlap = true; break; } }
+                    if (ballStartOverlap) continue;
+                    let existingObsOverlap = false;
+                    for (const existingObs of newCourse.obstacles) { const paddedExisting = { ...existingObs, x: existingObs.x - 5, y: existingObs.y - 5, width: existingObs.width + 10, height: existingObs.height + 10 }; const paddedNew = { ...obs, x: obs.x - 5, y: obs.y - 5, width: obs.width + 10, height: obs.height + 10 }; if (checkRectOverlap(paddedNew, paddedExisting)) { existingObsOverlap = true; break; } }
+                    if (existingObsOverlap) continue;
+                    newCourse.obstacles.push(obs); placed = true;
+                }
+            }
+
+            // 4. Place Hazards (Using Fixed Hazard Colors)
+            const numHazards = template.baseHazards + Math.floor(Math.random() * (template.maxHazards - template.baseHazards + 1));
+            const hazardMinSize = 60; const hazardMaxSize = Math.min(canvasWidth / 3, canvasHeight / 3);
+            for (let i = 0; i < numHazards; i++) {
+                let attempts = 0; let placed = false;
+                while (attempts < 50 && !placed) {
+                    attempts++;
+                    const hazardWidth = hazardMinSize + Math.random() * (hazardMaxSize - hazardMinSize);
+                    const hazardHeight = hazardMinSize + Math.random() * (hazardMaxSize - hazardMinSize);
+                    // *** Hazard color is determined by template.hazardColor, not level palette ***
+                    const hazard = { type: template.hazardType, x: Math.random() * (canvasWidth - hazardWidth - 2 * padding) + padding, y: Math.random() * (canvasHeight - hazardHeight - 2 * padding) + padding, width: hazardWidth, height: hazardHeight, color: template.hazardColor, frictionMultiplier: template.hazardFriction, pulseOffset: Math.random() * Math.PI * 2 };
+                    const holeSafeZoneRect = { x: newCourse.holePosition.x - (newCourse.holeRadius + safeZonePaddingHazard), y: newCourse.holePosition.y - (newCourse.holeRadius + safeZonePaddingHazard), width: (newCourse.holeRadius + safeZonePaddingHazard) * 2, height: (newCourse.holeRadius + safeZonePaddingHazard) * 2 };
+                    if (checkRectOverlap(hazard, holeSafeZoneRect)) continue;
+                    let ballStartOverlap = false;
+                    for (const ballStart of newCourse.startPositions) { const ballSafeZoneRect = { x: ballStart.x - (BALL_RADIUS + safeZonePaddingHazard), y: ballStart.y - (BALL_RADIUS + safeZonePaddingHazard), width: (BALL_RADIUS + safeZonePaddingHazard) * 2, height: (BALL_RADIUS + safeZonePaddingHazard) * 2 }; if (checkRectOverlap(hazard, ballSafeZoneRect)) { ballStartOverlap = true; break; } }
+                    if (ballStartOverlap) continue;
+                    let existingObsOverlap = false;
+                    for (const existingObs of newCourse.obstacles) { if (checkRectOverlap(hazard, existingObs)) { existingObsOverlap = true; break; } }
+                    if (existingObsOverlap) continue;
+                    let existingHazardOverlap = false;
+                    for (const existingHaz of newCourse.hazards) { const paddedExisting = { ...existingHaz, x: existingHaz.x - 10, y: existingHaz.y - 10, width: existingHaz.width + 20, height: existingHaz.height + 20 }; const paddedNew = { ...hazard, x: hazard.x - 10, y: hazard.y - 10, width: hazard.width + 20, height: hazard.height + 20 }; if (checkRectOverlap(paddedNew, paddedExisting)) { existingHazardOverlap = true; break; } }
+                    if (existingHazardOverlap) continue;
+                    newCourse.hazards.push(hazard); placed = true;
+                }
+            }
+
+            return newCourse;
+        }
+
+
+        // --- Load Course ---
+        function loadCourse(index) {
+             if (index >= courseTemplates.length) {
+                gameState = 'GAME_OVER';
+                 if (courseWinnerPlayerIndex !== -1) { gameWinnerPlayerIndex = courseWinnerPlayerIndex; }
+                 else { gameWinnerPlayerIndex = 0; } // Fallback winner
+                const winnerName = playerColorNames[gameWinnerPlayerIndex % playerColorNames.length] || `Player ${gameWinnerPlayerIndex + 1}`;
+                message = `Player ${gameWinnerPlayerIndex + 1} (${winnerName}) is Champion! Click to play again.`;
+                updateUI(); return;
+            }
+            const courseTemplate = courseTemplates[index];
+            currentCourse = generateProceduralCourse(courseTemplate, index, canvas.width, canvas.height, numPlayers);
+            // *** Clear hole particles for new course ***
+            holeParticles = [];
+            message = `Course ${index + 1}: ${currentCourse.name}`;
+            balls.forEach((ball, i) => {
+                if (currentCourse.startPositions && currentCourse.startPositions[i]) { ball.reset(currentCourse.startPositions[i].x, currentCourse.startPositions[i].y); }
+                else { console.error("Error: Start positions missing"); ball.reset(50 + i * 30, canvas.height / 2); }
+            });
+            currentPlayerIndex = currentCourseIndex % numPlayers;
+            let startAttempts = 0;
+            while(balls[currentPlayerIndex] && balls[currentPlayerIndex].inHole && startAttempts < numPlayers) { currentPlayerIndex = (currentPlayerIndex + 1) % numPlayers; startAttempts++; }
+            courseWinnerPlayerIndex = -1;
+            message += ` Player ${currentPlayerIndex + 1} (${playerColorNames[currentPlayerIndex % playerColorNames.length]}) starts.`;
+            gameState = 'WAITING_FOR_AIM'; updateUI();
+        }
+
+        // --- Switch Player ---
+        function switchPlayer() {
+            if (gameState === 'COURSE_WON' || gameState === 'GAME_OVER') return;
+            let nextPlayer = currentPlayerIndex; let attempts = 0;
+            do { nextPlayer = (nextPlayer + 1) % numPlayers; attempts++; if (!balls[nextPlayer]) { console.error("Invalid next player index"); return; } }
+            while (balls[nextPlayer].inHole && attempts < numPlayers * 2);
+            if (attempts >= numPlayers * 2 && balls.every(b => b.inHole)) { return; } // Should be caught by update
+            currentPlayerIndex = nextPlayer;
+            message = `Player ${currentPlayerIndex + 1} (${playerColorNames[currentPlayerIndex % playerColorNames.length]})'s turn.`;
+            gameState = 'WAITING_FOR_AIM'; updateUI();
+        }
+
+        // --- Reset Game ---
+        function resetGame() {
+            startScreen.style.display = 'flex'; gameCanvasElement.classList.add('game-hidden'); infoPanelElement.classList.add('game-hidden');
+            gameState = 'START_SCREEN'; message = "Select players and start!"; updateUI();
+            currentCourseIndex = 0; courseWinnerPlayerIndex = -1; gameWinnerPlayerIndex = -1;
+            balls = []; particles = []; holeParticles = []; // Clear all particle types
+        }
+
+        // --- Start Game ---
+        function startGame() {
+            if (Tone.context.state !== 'running') {
+                Tone.start().then(() => { if (!soundsReady) setupSounds(); console.log("Audio Context Started"); proceedWithGameStart(); })
+                .catch(e => { console.error("AudioContext Error:", e); proceedWithGameStart(); });
+            } else { if (!soundsReady) setupSounds(); proceedWithGameStart(); }
+        }
+        function proceedWithGameStart(){
+            console.log(`Starting game with ${numPlayers} players.`);
+            startScreen.style.display = 'none'; gameCanvasElement.classList.remove('game-hidden'); infoPanelElement.classList.remove('game-hidden');
+            balls = []; particles = []; holeParticles = []; // Clear all particle types
+            for (let i = 0; i < numPlayers; i++) { balls.push(new Ball(i, 0, 0, playerColors[i % playerColors.length])); }
+            currentCourseIndex = 0; courseWinnerPlayerIndex = -1; gameWinnerPlayerIndex = -1;
+            loadCourse(currentCourseIndex);
+        }
+
+        // --- Init ---
+        function init() {
+            startScreen = document.getElementById('startScreen'); gameCanvasElement = document.getElementById('gameCanvas'); infoPanelElement = document.querySelector('.info-panel'); gameContainerElement = document.getElementById('gameContainer'); decreasePlayersBtn = document.getElementById('decreasePlayers'); increasePlayersBtn = document.getElementById('increasePlayers'); playerCountDisplay = document.getElementById('playerCountDisplay'); startGameBtn = document.getElementById('startGameButton');
+            canvas = gameCanvasElement; ctx = canvas.getContext('2d'); canvas.width = 800; canvas.height = 600;
+            resizeCanvas(); window.addEventListener('resize', resizeCanvas);
+            defineCourseTemplates();
+            decreasePlayersBtn.addEventListener('click', () => { playSound('click'); if (numPlayers > 2) { numPlayers--; playerCountDisplay.textContent = numPlayers; } });
+            increasePlayersBtn.addEventListener('click', () => { playSound('click'); if (numPlayers < playerColors.length) { numPlayers++; playerCountDisplay.textContent = numPlayers; } });
+            startGameBtn.addEventListener('click', startGame);
+            gameState = 'START_SCREEN'; message = "Select players and start!"; updateUI();
+            canvas.addEventListener('mousedown', handleCanvasMouseDown); canvas.addEventListener('touchstart', handleCanvasTouchStart, { passive: false });
+            gameLoop();
+        }
+
+        // --- Canvas Resizing ---
+        function resizeCanvas() {
+            const availableWidth = window.innerWidth * 0.95; const availableHeight = window.innerHeight * 0.75;
+            const targetAspectRatio = 800 / 600; let newWidth, newHeight;
+            if (availableWidth / availableHeight > targetAspectRatio) { newHeight = availableHeight; newWidth = newHeight * targetAspectRatio; }
+            else { newWidth = availableWidth; newHeight = newWidth / targetAspectRatio; }
+            newWidth = Math.max(newWidth, 300); newHeight = Math.max(newHeight, 225);
+            gameContainerElement.style.width = newWidth + 'px'; gameContainerElement.style.height = newHeight + 'px';
+        }
+
+        // --- Input Handling ---
+        function getCanvasPos(evt, isTouchEvent = false) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = isTouchEvent ? evt.touches[0].clientX : evt.clientX; const clientY = isTouchEvent ? evt.touches[0].clientY : evt.clientY;
+            const scaleX = canvas.width / rect.width; const scaleY = canvas.height / rect.height;
+            return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+        }
+        function handleCanvasMouseDown(e) { if (gameState === 'GAME_OVER') { resetGame(); return; } if (gameState !== 'WAITING_FOR_AIM') return; if (!balls[currentPlayerIndex] || balls[currentPlayerIndex].inHole) return; startAiming(getCanvasPos(e)); }
+        function globalMouseMove(e) { if (!isAiming || gameState !== 'AIMING') return; updateAiming(getCanvasPos(e)); }
+        function globalMouseUp() { if (!isAiming || gameState !== 'AIMING') return; finishAiming(); }
+        function handleCanvasTouchStart(e) { if (gameState === 'GAME_OVER') { resetGame(); return; } if (gameState !== 'WAITING_FOR_AIM') return; if (!balls[currentPlayerIndex] || balls[currentPlayerIndex].inHole) return; if (e.touches.length === 1) { e.preventDefault(); startAiming(getCanvasPos(e, true)); } }
+        function globalTouchMove(e) { if (!isAiming || gameState !== 'AIMING') return; if (e.touches.length === 1) { e.preventDefault(); updateAiming(getCanvasPos(e, true));} }
+        function globalTouchEnd() { if (!isAiming || gameState !== 'AIMING') return; finishAiming(); }
+        function startAiming(posOnCanvas) {
+            if (!balls[currentPlayerIndex]) return; const activeBall = balls[currentPlayerIndex]; if (activeBall.inHole) return;
+            if (distance(posOnCanvas, {x: activeBall.x, y: activeBall.y}) < activeBall.radius + 40) {
+                isAiming = true; aimStartPos = { x: activeBall.x, y: activeBall.y }; aimEndPos = posOnCanvas; gameState = 'AIMING';
+                message = `Player ${currentPlayerIndex + 1} (${playerColorNames[currentPlayerIndex % playerColorNames.length]}) aiming...`; updateUI();
+                window.addEventListener('mousemove', globalMouseMove); window.addEventListener('mouseup', globalMouseUp);
+                window.addEventListener('touchmove', globalTouchMove, { passive: false }); window.addEventListener('touchend', globalTouchEnd, { passive: false });
+            }
+        }
+        function updateAiming(posOnCanvas) { aimEndPos = posOnCanvas; }
+        function finishAiming() {
+            isAiming = false; window.removeEventListener('mousemove', globalMouseMove); window.removeEventListener('mouseup', globalMouseUp); window.removeEventListener('touchmove', globalTouchMove); window.removeEventListener('touchend', globalTouchEnd);
+            if (!balls[currentPlayerIndex]) return; const activeBall = balls[currentPlayerIndex]; if (activeBall.inHole) { gameState = 'WAITING_FOR_AIM'; return; }
+            let dx = aimStartPos.x - aimEndPos.x; let dy = aimStartPos.y - aimEndPos.y; let dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < MIN_DRAG_DISTANCE) { gameState = 'WAITING_FOR_AIM'; message = `Player ${currentPlayerIndex + 1} (${playerColorNames[currentPlayerIndex % playerColorNames.length]})'s turn. Aim again.`; updateUI(); return; }
+            let power = Math.min(dist / POWER_SENSITIVITY_DIVISOR, MAX_POWER); activeBall.shoot(power, Math.atan2(dy, dx));
+            gameState = 'BALL_MOVING'; message = `Player ${currentPlayerIndex + 1} (${playerColorNames[currentPlayerIndex % playerColorNames.length]}) shot!`; updateUI();
+        }
+
+        // --- Game Update Logic ---
+        function update() {
+            if (gameState === 'LOADING' || gameState === 'START_SCREEN' || gameState === 'GAME_OVER' || gameState === 'COURSE_WON') { return; }
+
+            // *** Spawn hole particles periodically ***
+            if (currentCourse && Math.random() < HOLE_PARTICLE_SPAWN_RATE) {
+                for(let i=0; i < HOLE_PARTICLE_COUNT; i++) {
+                    createHoleParticle(currentCourse.holePosition.x, currentCourse.holePosition.y, currentCourse.holeRadius, currentCourse.primaryColor);
+                }
+            }
+
+            if (gameState === 'BALL_MOVING') {
+                let anyBallStillMoving = false; let allPlayersInHole = true;
+                balls.forEach(ball => { if (!ball.inHole) { allPlayersInHole = false; if (ball.isMoving) { ball.update(currentCourse.obstacles, currentCourse.hazards, currentCourse.holePosition, currentCourse.holeRadius, balls, canvas.width, canvas.height); if (ball.isMoving) { anyBallStillMoving = true; } } } });
+                 if (allPlayersInHole) {
+                      console.log("All players are in the hole!"); courseWinnerPlayerIndex = currentPlayerIndex;
+                      if (currentCourseIndex === courseTemplates.length - 1) {
+                          gameWinnerPlayerIndex = courseWinnerPlayerIndex; gameState = 'GAME_OVER';
+                          const winnerName = playerColorNames[gameWinnerPlayerIndex % playerColorNames.length] || `Player ${gameWinnerPlayerIndex + 1}`;
+                          message = `Player ${gameWinnerPlayerIndex + 1} (${winnerName}) is Champion! Click to play again.`;
+                      } else {
+                          message = `Player ${courseWinnerPlayerIndex + 1} (${playerColorNames[courseWinnerPlayerIndex % playerColorNames.length]}) cleared Course ${currentCourseIndex + 1}! Next...`;
+                          gameState = 'COURSE_WON'; setTimeout(() => { currentCourseIndex++; loadCourse(currentCourseIndex); }, 2000);
+                      }
+                      updateUI();
+                 } else if (!anyBallStillMoving) { switchPlayer(); }
+            }
+        }
+
+        // --- Draw Game Over Screen (Neon) ---
+        function drawGameOverScreen() {
+            if (currentCourse) { drawBackground(ctx, currentCourse.bgPattern, currentCourse.bgColor, canvas.width, canvas.height); }
+            else { ctx.fillStyle = '#0a0a1a'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)'; ctx.fillRect(0, 0, canvas.width, canvas.height); ctx.textAlign = 'center';
+            const titleColor = '#00ff00'; ctx.font = '40px "Press Start 2P"'; ctx.fillStyle = titleColor; ctx.shadowColor = titleColor; ctx.shadowBlur = 15; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0; ctx.fillText("VICTORY!", canvas.width / 2, canvas.height / 2 - 80);
+            ctx.font = '28px "Press Start 2P"'; const winnerExists = gameWinnerPlayerIndex !== -1 && balls[gameWinnerPlayerIndex]; const winnerColor = winnerExists ? balls[gameWinnerPlayerIndex].color : '#ffffff'; const winnerName = playerColorNames[gameWinnerPlayerIndex % playerColorNames.length] || `Player ${gameWinnerPlayerIndex + 1}`;
+            ctx.fillStyle = winnerColor; ctx.shadowColor = winnerColor; ctx.shadowBlur = 10; ctx.fillText(`Player ${gameWinnerPlayerIndex + 1} (${winnerName}) Wins!`, canvas.width / 2, canvas.height / 2);
+             ctx.save(); ctx.fillStyle = winnerColor; ctx.shadowColor = winnerColor; ctx.shadowBlur = 8; ctx.beginPath(); ctx.arc(canvas.width / 2, canvas.height / 2 + 50, 15, 0, Math.PI*2); ctx.fill();
+             ctx.fillStyle = 'rgba(255, 255, 255, 0.4)'; ctx.beginPath(); ctx.arc(canvas.width / 2 - 15 * 0.2, canvas.height / 2 + 50 - 15 * 0.2, 15 * 0.8, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+            ctx.font = '18px "Press Start 2P"'; ctx.fillStyle = '#00ffff'; ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 8; ctx.fillText("Click or Tap to Play Again", canvas.width / 2, canvas.height / 2 + 110);
+            ctx.shadowColor = 'transparent'; ctx.shadowBlur = 0;
+        }
+
+
+        // --- Draw Neon Obstacle (with Contained Diagonal Lines & Gradient) ---
+        function drawNeonObstacle(obs, context) {
+            context.save();
+
+            // Gradient Fill
+            const gradient = context.createLinearGradient(obs.x, obs.y, obs.x + obs.width, obs.y + obs.height);
+            gradient.addColorStop(0, shadeColor(obs.color, -75)); gradient.addColorStop(0.5, shadeColor(obs.color, -90)); gradient.addColorStop(1, shadeColor(obs.color, -75));
+            context.fillStyle = gradient;
+            context.fillRect(obs.x, obs.y, obs.width, obs.height);
+
+            // Diagonal Lines (Clipped)
+            context.beginPath(); context.rect(obs.x, obs.y, obs.width, obs.height); context.clip(); // Set clip path
+            context.strokeStyle = obs.color; context.lineWidth = 1; context.globalAlpha = 0.4; context.shadowColor = obs.color; context.shadowBlur = 4;
+            const lineSpacing = 8;
+            context.beginPath(); // New path for lines
+            for (let d = -obs.height; d < obs.width; d += lineSpacing) { context.moveTo(obs.x + d, obs.y); context.lineTo(obs.x + d + obs.height, obs.y + obs.height); }
+            context.stroke();
+            context.restore(); // Removes clip and line styles
+
+            // Main Outline Glow
+            context.save();
+            context.shadowColor = obs.color; context.shadowBlur = 15; context.strokeStyle = obs.color; context.lineWidth = 3;
+            context.strokeRect(obs.x, obs.y, obs.width, obs.height);
+            context.restore();
+        }
+
+        // --- Draw Background (Uses Level Primary Color for Grid) ---
+        function drawBackground(context, patternType, color, width, height, primaryLevelColor) { // Added primaryLevelColor
+            context.fillStyle = color; context.fillRect(0, 0, width, height);
+            if (patternType === 'grid' && primaryLevelColor) { // Check if primaryLevelColor is provided
+                context.save();
+                const gridColor = primaryLevelColor; // *** Use level's primary color ***
+                context.strokeStyle = gridColor;
+                context.lineWidth = 1.5;
+                context.globalAlpha = 0.25; // Slightly dimmer grid
+                context.shadowColor = gridColor;
+                context.shadowBlur = 5; // Slightly reduced glow
+
+                const step = 40;
+                for (let x = 0; x < width; x += step) { context.beginPath(); context.moveTo(x, 0); context.lineTo(x, height); context.stroke(); }
+                for (let y = 0; y < height; y += step) { context.beginPath(); context.moveTo(0, y); context.lineTo(width, y); context.stroke(); }
+                context.restore();
+            }
+            // Vignette
+            const gradient = context.createRadialGradient(width/2, height/2, Math.min(width, height) * 0.2, width/2, height/2, Math.max(width, height) * 0.8);
+            gradient.addColorStop(0, 'rgba(0,0,0,0)'); gradient.addColorStop(1, 'rgba(0,0,0,0.4)');
+            context.fillStyle = gradient; context.fillRect(0, 0, width, height);
+        }
+
+        // --- Draw Hazards (Optimized - No Hex Grid) ---
+        function drawHazards(context, hazards) {
+            hazards.forEach(hazard => {
+                context.save();
+                const pulse = Math.sin(Date.now() * 0.003 + hazard.pulseOffset) * 0.2 + 0.8;
+
+                // Pulsing Fill
+                context.fillStyle = hazard.color;
+                context.globalAlpha = 0.15 * pulse;
+                context.shadowColor = hazard.color;
+                context.shadowBlur = 10 * pulse;
+                context.fillRect(hazard.x, hazard.y, hazard.width, hazard.height);
+                context.restore();
+
+                // Pulsing Border Glow
+                context.save();
+                context.shadowColor = hazard.color; context.shadowBlur = 8 * pulse;
+                context.strokeStyle = hazard.color; context.lineWidth = 1.5; context.globalAlpha = 0.5 * pulse;
+                context.strokeRect(hazard.x, hazard.y, hazard.width, hazard.height);
+                context.restore();
+            });
+        }
+
+
+        // --- Main Draw Function ---
+        function draw() {
+            if (gameState === 'START_SCREEN') return;
+            if (gameState === 'GAME_OVER') { drawGameOverScreen(); return; }
+            if (!currentCourse) { return; }
+
+            // Draw Background (passing primary color)
+            drawBackground(ctx, currentCourse.bgPattern, currentCourse.bgColor, canvas.width, canvas.height, currentCourse.primaryColor);
+
+            // Draw Hazards
+            if (currentCourse.hazards) { drawHazards(ctx, currentCourse.hazards); }
+
+            // Draw Hole (Neon with Pulse)
+            const holePos = currentCourse.holePosition; const holeRadius = currentCourse.holeRadius;
+            const holePulse = Math.sin(Date.now() * 0.002) * 0.15 + 0.85;
+            ctx.save(); ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 15 * holePulse; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.globalAlpha = holePulse;
+            ctx.beginPath(); ctx.arc(holePos.x, holePos.y, holeRadius, 0, Math.PI * 2); ctx.stroke();
+            ctx.globalAlpha = 1.0;
+            const holeGradient = ctx.createRadialGradient(holePos.x, holePos.y, 0, holePos.x, holePos.y, holeRadius);
+            holeGradient.addColorStop(0, 'rgba(0,0,0,0.5)'); holeGradient.addColorStop(0.8, 'rgba(0,0,0,0.8)'); holeGradient.addColorStop(1, 'rgba(0,0,0,0.5)');
+            ctx.fillStyle = holeGradient; ctx.fill(); ctx.restore();
+
+            // *** Draw Hole Particles ***
+            updateAndDrawHoleParticles(ctx);
+
+            // Draw Obstacles
+            currentCourse.obstacles.forEach(obs => { drawNeonObstacle(obs, ctx); });
+
+            // Draw Balls
+            balls.forEach(ball => ball.draw(ctx));
+
+            // Draw Collision Particles
+            updateAndDrawParticles(ctx);
+
+            // Draw Aiming Line
+            if (isAiming && gameState === 'AIMING' && balls[currentPlayerIndex] && !balls[currentPlayerIndex].inHole) {
+                let activeBall = balls[currentPlayerIndex]; let dragDx = activeBall.x - aimEndPos.x; let dragDy = activeBall.y - aimEndPos.y;
+                let currentDragDist = Math.sqrt(dragDx*dragDx + dragDy*dragDy); let currentPowerRatio = Math.min(1, currentDragDist / (MAX_POWER * POWER_SENSITIVITY_DIVISOR * 0.8) );
+                let aimLineDisplayLength = 40 + currentPowerRatio * 120; let angle = Math.atan2(dragDy, dragDx);
+                let r = Math.round(255 * Math.min(1, currentPowerRatio * 2)); let g = Math.round(255 * (1 - Math.abs(currentPowerRatio - 0.5) * 2)); let b = 0;
+                const aimColor = `rgb(${r},${g},${b})`; aimPulseTime += 0.1; const pulseAlpha = 0.7 + Math.sin(aimPulseTime) * 0.3;
+                ctx.save(); ctx.strokeStyle = aimColor; ctx.lineWidth = 2 + currentPowerRatio * 2; ctx.globalAlpha = pulseAlpha; ctx.shadowColor = aimColor; ctx.shadowBlur = 5 + currentPowerRatio * 5; ctx.setLineDash([8, 6]); ctx.lineCap = 'round';
+                ctx.beginPath(); ctx.moveTo(activeBall.x, activeBall.y); ctx.lineTo(activeBall.x + Math.cos(angle) * aimLineDisplayLength, activeBall.y + Math.sin(angle) * aimLineDisplayLength); ctx.stroke(); ctx.restore();
+                ctx.save(); ctx.fillStyle = aimColor; ctx.font = '14px "Press Start 2P"'; ctx.textAlign = 'center'; ctx.shadowColor = aimColor; ctx.shadowBlur = 4;
+                let displayPower = Math.min(100, currentDragDist / POWER_SENSITIVITY_DIVISOR / MAX_POWER * 100);
+                const textX = activeBall.x + Math.cos(angle) * (aimLineDisplayLength + 25); const textY = activeBall.y + Math.sin(angle) * (aimLineDisplayLength + 25);
+                ctx.fillText(`${Math.round(displayPower)}%`, textX, textY ); ctx.restore();
+            }
+        }
+
+        // --- Update UI ---
+        function updateUI() {
+            if (gameState === 'START_SCREEN') { document.getElementById('messageArea').textContent = "Select players & Start!"; document.getElementById('playerIndicator').textContent = ""; return; }
+            if (!currentCourse || !balls || balls.length === 0 || typeof currentPlayerIndex === 'undefined') return;
+            document.getElementById('messageArea').textContent = message;
+            let playerParts = [];
+            for(let i=0; i<numPlayers; i++) {
+                let colorName = playerColorNames[i % playerColorNames.length] || `P${i+1}`;
+                if (i === currentPlayerIndex && gameState !== 'COURSE_WON' && gameState !== 'GAME_OVER') { playerParts.push(`<span class="current-player-indicator">-> P${i+1} (${colorName})</span>`); }
+                else { playerParts.push(`<span style="opacity: 0.7;">P${i+1} (${colorName})</span>`); }
+            }
+            document.getElementById('playerIndicator').innerHTML = playerParts.join(' | ');
+        }
+
+        // --- Game Loop ---
+        function gameLoop() {
+            if (gameState !== 'START_SCREEN' && gameState !== 'LOADING') { update(); }
+            draw(); requestAnimationFrame(gameLoop);
+        }
+
+        // --- Start ---
+        window.onload = init;
+    </script>
+</body>
+</html>
